@@ -2,10 +2,10 @@
 // Imports
 #include <stdio.h>
 #include <sys/ioctl.h>
+#include <termios.h>
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
-#include <termios.h>
 
 // Key codes
 #define BREAK 3
@@ -18,8 +18,9 @@
 // Config
 #define GRACE 3
 #define SNAKELEN 5
-#define SPEED 40000
+#define SPEED 60000
 #define FRUITVAL 5
+#define LOOP
 
 // turn on for debug
 //#define DEBUG
@@ -249,8 +250,8 @@ void placefruit() { placefruitstart:
 int main(void) { 
 
 	#ifdef DEBUG
-		sizey = 2;
-		sizex = 6;
+		sizey = 5;
+		sizex = 30;
 	#else
 		struct winsize _w; // get term size
 		ioctl(0, TIOCGWINSZ, &_w);
@@ -315,22 +316,46 @@ int main(void) {
 				case KEYW:
 					if (dir == KEYS) goto mainloopkeydefault; // if tried to double back, ignore input
 					newsnake = snake[0] - sizex;
-					if (newsnake >= size) goto mainloopgracecheck; // top/bottom bounds check					
+					if (newsnake >= size) { // top/bottom bounds check	
+						#ifdef LOOP
+							newsnake += size;
+						#else
+							goto mainloopgracecheck;
+						#endif
+					}
 					break;
 				case KEYS:
 					if (dir == KEYW) goto mainloopkeydefault;
 					newsnake = snake[0] + sizex;
-					if (newsnake >= size) goto mainloopgracecheck;
+					if (newsnake >= size) { // top/bottom bounds check	
+						#ifdef LOOP
+							newsnake -= size;
+						#else
+							goto mainloopgracecheck;
+						#endif
+					}
 					break;
 				case KEYA:
 					if (dir == KEYD) goto mainloopkeydefault;
 					newsnake = snake[0] - 1;
-					if ((newsnake / sizex) != (snake[0] / sizex)) goto mainloopgracecheck; // left rgiht bound detection
+					if ((newsnake / sizex) != (snake[0] / sizex)) { // left rgiht bound detection
+						#ifdef LOOP
+							newsnake += sizex;
+						#else
+							goto mainloopgracecheck;
+						#endif
+					}
 					break;
 				case KEYD:
 					if (dir == KEYA) goto mainloopkeydefault;
 					newsnake = snake[0] + 1;
-					if ((newsnake / sizex) != (snake[0] / sizex)) goto mainloopgracecheck;
+					if ((newsnake / sizex) != (snake[0] / sizex)) { // left rgiht bound detection
+						#ifdef LOOP
+							newsnake -= sizex;
+						#else
+							goto mainloopgracecheck;
+						#endif
+					}
 					break;
 				default: mainloopkeydefault:
 					if (dir == 0)
